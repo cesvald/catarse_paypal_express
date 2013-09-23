@@ -116,7 +116,7 @@ class CatarsePaypalExpress::PaypalExpressController < ApplicationController
   def converted_price
     conversion = t('paypal_conversion', scope: SCOPE).to_f
     if conversion > 0
-      backer.price_in_cents * conversion
+      (backer.value / conversion * 100).round
     else
       backer.price_in_cents
     end
