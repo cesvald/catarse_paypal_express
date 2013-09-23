@@ -23,11 +23,11 @@ class CatarsePaypalExpress::PaypalExpressController < ApplicationController
 
   def pay
     begin
-      response = gateway.setup_purchase(backer.price_in_cents, {
+      response = gateway.setup_purchase(converted_price, {
         ip: request.remote_ip,
         return_url: success_paypal_expres_url(id: backer.id),
         cancel_return_url: cancel_paypal_expres_url(id: backer.id),
-        currency_code: t('number.currency.format.unit'),
+        currency_code: t('paypal_currency', scope: SCOPE),
         description: t('paypal_description', scope: SCOPE, :project_name => backer.project.name, :value => backer.display_value),
         notify_url: ipn_paypal_express_url
       })
@@ -45,7 +45,7 @@ class CatarsePaypalExpress::PaypalExpressController < ApplicationController
 
   def success
     begin
-      purchase = gateway.purchase(backer.price_in_cents, {
+      purchase = gateway.purchase(converted_price, {
         ip: request.remote_ip,
         token: backer.payment_token,
         payer_id: params[:PayerID]
@@ -110,4 +110,16 @@ class CatarsePaypalExpress::PaypalExpressController < ApplicationController
       puts "[PayPal] An API Certificate or API Signature is required to make requests to PayPal"
     end
   end
+
+  private
+
+  def converted_price
+    conversion = t('paypal_conversion', scope: SCOPE).to_f
+    if conversion > 0
+      backer.price_in_cents * conversion
+    else
+      backer.price_in_cents
+    end
+  end
+
 end
