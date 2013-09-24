@@ -1,4 +1,5 @@
 class CatarsePaypalExpress::PaypalExpressController < ApplicationController
+  include ActionView::Helpers::NumberHelper
   skip_before_filter :force_http
   SCOPE = "projects.backers.checkout"
   layout :false
@@ -23,12 +24,18 @@ class CatarsePaypalExpress::PaypalExpressController < ApplicationController
 
   def pay
     begin
-      response = gateway.setup_purchase(converted_price, {
+      price = converted_price
+      if price != backer.price_in_cents
+        description = t('paypal_description', scope: SCOPE, :project_name => backer.project.name, :value => "#{number_to_currency((price.to_f / 100), unit: t('paypal_currency', scope: SCOPE), precision: 2, separator: t('number.format.separator'), delimiter: t('number.format.delimiter'))} (#{backer.display_value})")
+      else
+        description = t('paypal_description', scope: SCOPE, :project_name => backer.project.name, :value => backer.display_value)
+      end
+      response = gateway.setup_purchase(price, {
         ip: request.remote_ip,
         return_url: success_paypal_expres_url(id: backer.id),
         cancel_return_url: cancel_paypal_expres_url(id: backer.id),
         currency_code: t('paypal_currency', scope: SCOPE),
-        description: t('paypal_description', scope: SCOPE, :project_name => backer.project.name, :value => backer.display_value),
+        description: description,
         notify_url: ipn_paypal_express_url
       })
 
